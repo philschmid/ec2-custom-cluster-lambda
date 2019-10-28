@@ -1,0 +1,82 @@
+# aws --profile xxx cloudformation create-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip cfn-create-group.yaml) --parameters ParameterKey=STAGE,ParameterValue=qa
+# aws --profile xxx  cloudformation update-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip cfn-create-group.yaml) --parameters ParameterKey=STAGE,ParameterValue=qa
+
+# aws cloudformation create-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip template.yaml)
+# aws cloudformation update-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip template.yaml)
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Creates Security-Groups for ec2"
+
+Parameters:
+  # AMIImage:
+  #   Type: String
+  #   Default: "x"
+  GroupName:
+    Type: String
+    Default: "sqs-group"
+  DeployRegion:
+    Type: String
+    Default: "eu-central-1"
+
+Mappings:
+  SubnetConfig:
+    VPC:
+      CIDR: "10.0.0.0/16"
+    PublicOne:
+      CIDR: "10.0.0.0/24"
+    # PublicTwo:
+    #   CIDR: '10.0.1.0/24'
+    # PrivateOne:
+    #   CIDR: '10.0.2.0/24'
+    # PrivateTwo:
+    #   CIDR: '10.0.3.0/24'
+
+Resources:
+  EC2VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !FindInMap ["SubnetConfig", "VPC", "CIDR"]
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Ref GroupName
+      GroupDescription: Launch-Group-sqs
+      VpcId: !Ref EC2VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          Description: https
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          Description: https
+          FromPort: 443
+          ToPort: 443
+          CidrIpv6: ::/0
+
+      # SecurityGroupEgress:
+      #   IpProtocol: -1
+      #   CidrIp: 0.0.0.0/0
+  PublicSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref "AWS::Region"
+      VpcId: !Ref EC2VPC
+      CidrBlock: !FindInMap ["SubnetConfig", "PublicOne", "CIDR"]
+      MapPublicIpOnLaunch: true
+Outputs:
+  # Export SQS-data
+  SecurityGroup:
+    Description: "Description"
+    Value: !Ref SecurityGroup
+    Export:
+      Name: SECURITY-GROUP-NAME
+  PublicSubnetOne:
+    Description: "Description"
+    Value: !Ref PublicSubnetOne
+    Export:
+      Name: SUBNET-NAME
