@@ -7,7 +7,7 @@ def stop_instances(instance_list,count):
     try:
         for i in range(len(instance_list)-1, len(instance_list)-count-1, -1):
             print(i)
-            instance = ec2.Instance(instance_list[i].instance_id).stop()
+            instance = ec2.Instance(instance_list[i].instance_id).terminate()
         return True
     except:
         raise 

@@ -3,7 +3,7 @@ ec2 = boto3.resource('ec2')
 
 def get_instance_list(role):
     try:
-        instances = list(ec2.instances.filter(Filters=[{'Name':'tag:module', 'Values':[role]}]))
+        instances = list(ec2.instances.filter(Filters=[{'Name':'tag:module', 'Values':[role]},{'Name': 'instance-state-name', 'Values': ['running']}]))
         if(len(instances)<0):
             return[]
         return instances

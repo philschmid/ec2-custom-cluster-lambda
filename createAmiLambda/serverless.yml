@@ -1,4 +1,4 @@
-service: ${self:provider.tags.customer}-${self:provider.tags.app}-${self:provider.tags.module}
+service: ${self:provider.tags.customer}-${self:provider.tags.app}-${self:provider.tags.module}-${self:provider.tags.element}
 
 provider:
   runtime: python3.7
@@ -9,15 +9,14 @@ provider:
     app: insight
     stage: ${opt:stage}
     module: translator
+    element: ami
+    action: create
   environment:
     sqs_queue_url:
       Fn::ImportValue: talos-sqs-url-snap-insight-translator-${opt:stage}
-    ecs_cluster:
-      Fn::ImportValue: ECSCluster-ARN-insight-${opt:stage}
-    ecs_service:
-      Fn::ImportValue: ECSService-ARN-insight-${opt:stage}
-    ecs_task:
-      Fn::ImportValue: ECSTaskdefintion-ARN-insight-${opt:stage}
+    stack_name: ${self:provider.tags.app}-${self:provider.tags.module}-${self:provider.tags.action}-${self:provider.tags.element}
+    stage: ${opt:stage}
+
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -27,5 +26,5 @@ provider:
         Fn::ImportValue: talos-dynamodb-arn-insight-module-${opt:stage}
 
 functions:
-  hello:
-    handler: handler.autoscaler
+  createAmi:
+    handler: handler.createAmi

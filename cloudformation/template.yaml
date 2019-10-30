@@ -1,49 +1,52 @@
 # aws --profile xxx cloudformation create-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip cfn-create-group.yaml) --parameters ParameterKey=STAGE,ParameterValue=qa
 # aws --profile xxx  cloudformation update-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip cfn-create-group.yaml) --parameters ParameterKey=STAGE,ParameterValue=qa
 
-# aws cloudformation create-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip template.yaml)
-# aws cloudformation update-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip template.yaml)
+# aws cloudformation create-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip template.yaml) --capabilities CAPABILITY_IAM
+# aws cloudformation update-stack --stack-name ec2-custom-cluster --template-body file://<(cfn-flip template.yaml) --capabilities CAPABILITY_IAM
 
 AWSTemplateFormatVersion: 2010-09-09
 Description: "Creates Security-Groups for ec2"
 
 Parameters:
-  # AMIImage:
-  #   Type: String
-  #   Default: "x"
-  GroupName:
+  STAGE:
+    Type: String
+    Default: "qa"
+  SERVICENAME:
+    Type: String
+    Default: "translator"
+  GROUPNAME:
     Type: String
     Default: "sqs-group"
-  DeployRegion:
-    Type: String
-    Default: "eu-central-1"
+#   DEPLOYREGION:
+#     Type: String
+#     Default: "eu-central-1"
 
-Mappings:
-  SubnetConfig:
-    VPC:
-      CIDR: "10.0.0.0/16"
-    PublicOne:
-      CIDR: "10.0.0.0/24"
-    # PublicTwo:
-    #   CIDR: '10.0.1.0/24'
-    # PrivateOne:
-    #   CIDR: '10.0.2.0/24'
-    # PrivateTwo:
-    #   CIDR: '10.0.3.0/24'
+# Mappings:
+#   SubnetConfig:
+#     VPC:
+#       CIDR: "10.0.0.0/16"
+#     PublicOne:
+#       CIDR: "10.0.0.0/24"
+# PublicTwo:
+#   CIDR: '10.0.1.0/24'
+# PrivateOne:
+#   CIDR: '10.0.2.0/24'
+# PrivateTwo:
+#   CIDR: '10.0.3.0/24'
 
 Resources:
-  EC2VPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
-      CidrBlock: !FindInMap ["SubnetConfig", "VPC", "CIDR"]
+  # EC2VPC:
+  #   Type: AWS::EC2::VPC
+  #   Properties:
+  #     EnableDnsSupport: true
+  #     EnableDnsHostnames: true
+  #     CidrBlock: !FindInMap ["SubnetConfig", "VPC", "CIDR"]
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Ref GroupName
+      GroupName: !Ref GROUPNAME
       GroupDescription: Launch-Group-sqs
-      VpcId: !Ref EC2VPC
+      # VpcId: !Ref EC2VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           Description: https
@@ -55,28 +58,84 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIpv6: ::/0
-
+        - IpProtocol: tcp
+          Description: ssh
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          Description: ssh
+          FromPort: 22
+          ToPort: 22
+          CidrIpv6: ::/0
       # SecurityGroupEgress:
       #   IpProtocol: -1
       #   CidrIp: 0.0.0.0/0
-  PublicSubnetOne:
-    Type: AWS::EC2::Subnet
+  # PublicSubnetOne:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     AvailabilityZone: !Select
+  #       - 0
+  #       - Fn::GetAZs: !Ref "AWS::Region"
+  #     VpcId: !Ref EC2VPC
+  #     CidrBlock: !FindInMap ["SubnetConfig", "PublicOne", "CIDR"]
+  #     MapPublicIpOnLaunch: true
+  EC2IAMRole:
+    Type: AWS::IAM::Role
     Properties:
-      AvailabilityZone: !Select
-        - 0
-        - Fn::GetAZs: !Ref "AWS::Region"
-      VpcId: !Ref EC2VPC
-      CidrBlock: !FindInMap ["SubnetConfig", "PublicOne", "CIDR"]
-      MapPublicIpOnLaunch: true
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action: ["sts:AssumeRole"]
+      Path: /
+      Policies:
+        - PolicyName: EC2IAMRoleExecutionRole
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ec2:*"
+                  - "sqs:*"
+                  - "s3:*"
+                  - "logs:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "ec2:RunInstances"
+                  - "ec2:AssociateIamInstanceProfile"
+                  - ec2:ReplaceIamInstanceProfileAssociation
+                  - iam:PassRole
+                Resource: "*"
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2IAMRole
 Outputs:
   # Export SQS-data
   SecurityGroup:
-    Description: "Description"
+    Description: "Name of Security-Group"
     Value: !Ref SecurityGroup
     Export:
-      Name: SECURITY-GROUP-NAME
-  PublicSubnetOne:
-    Description: "Description"
-    Value: !Ref PublicSubnetOne
+      Name:
+        !Join ["-", ["security-group", "name", !Ref SERVICENAME, !Ref STAGE]]
+  EC2Role:
+    Description: "Name of EC2Role"
+    Value: !Ref EC2IAMRole
     Export:
-      Name: SUBNET-NAME
+      Name: !Join ["-", ["iam-role", "name", !Ref SERVICENAME, !Ref STAGE]]
+  EC2InstanceProfile:
+    Description: "Name of EC2InstanceProfile"
+    Value: !Ref EC2InstanceProfile
+    Export:
+      Name:
+        !Join ["-", ["instance-profile", "name", !Ref SERVICENAME, !Ref STAGE]]
+  # PublicSubnetOne:
+  #   Description: "Description"
+  #   Value: !Ref PublicSubnetOne
+  #   Export:
+  #     Name: SUBNET-NAME

@@ -7,13 +7,16 @@ from utils.stop_instances import stop_instances
 from utils.get_cf_outputs import get_cf_outputs
 from utils.create_ec2_tags import create_ec2_tags
 from utils.get_instance_list import get_instance_list
+from utils.create_user_data import create_user_data
 from utils.calculate_instance_number import calculate_instance_number
 
 
+from dotenv import load_dotenv
+load_dotenv()
+
 client = boto3.client('ecs', region_name='eu-central-1')
 
-user_data_start = '''#!/bin/bash
-docker run hello-world > /tmp/test.txt'''
+
 
 # set Var for functionality -> get CF output stack (AMI-ID, SQS_QUEUE, S3_bucket)
 # get messages in queue
@@ -36,10 +39,18 @@ def ec2_scaler(event,context):
         # #
         #! # get cf output values
         # #
-        # instance['image_id'] = get_cf_outputs('AMI-Stack')
-        instance['security_group'] = get_cf_outputs('ec2-custom-cluster','SECURITY-GROUP-NAME')
-        instance['subnet'] = get_cf_outputs('ec2-custom-cluster','SUBNET-NAME')
-        instance['image_id'] = 'ami-0bd042f11dba44355'
+        # instance['image_id'] = get_cf_outputs(f"insight-translator-create-ami-{os.environ['STAGE']}","AMI-ID")
+        instance['image_id'] = 'ami-0a93c6eb514c485e6'
+
+        instance['security_group'] = get_cf_outputs('ec2-custom-cluster',f"security-group-name-{os.environ['SERVICENAME']}-{os.environ['STAGE']}")
+        instance['instance_profile'] = get_cf_outputs('ec2-custom-cluster',f"instance-profile-name-{os.environ['SERVICENAME']}-{os.environ['STAGE']}")
+        instance['iam_role'] = get_cf_outputs('ec2-custom-cluster',f"iam-role-name-{os.environ['SERVICENAME']}-{os.environ['STAGE']}")
+        # #
+        #! # create start script
+        # #
+
+        user_data_start = create_user_data(instance['iam_role'])
+        print(user_data_start)
 
         # #
         #! # count messages in QUEUE
@@ -84,7 +95,7 @@ def ec2_scaler(event,context):
         ##
         if(instance_number > 0):
             # start_instance(user_data=user_data_start,image_id=instance['image_id'],security_group=os.environ['security_group'],count=instance_number,instance_type=os.environ['instance_type'],iam_profil=os.environ['iam_profil'])
-            started_instances_list=start_instance(user_data=user_data_start,image_id=instance['image_id'],security_group=instance['security_group'],count=instance_number,subnet_id=instance['subnet'],instance_type='t2.micro',iam_profil='ec2_custom_cluster')
+            started_instances_list=start_instance(user_data=user_data_start,image_id=instance['image_id'],security_group=instance['security_group'],count=instance_number,instance_type='t2.micro',iam_profil=instance['instance_profile'] )
             print(started_instances_list)
             create_ec2_tags(started_instances_list,'translator')
         elif(instance_number < 0 ):

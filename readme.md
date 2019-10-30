@@ -5,8 +5,7 @@ duration 2:09 min
 # todos
 
 - fixed starte_instance
-  - security_group
-  - subnet
+    <!-- - subnet -->
   - iam_profile
 - read sqs queue
 
