@@ -1,7 +1,7 @@
 import boto3 
 
 
-def create_instance(user_data):
+def create_instance(user_data,iam_profil):
     ec2 = boto3.resource('ec2', region_name='eu-central-1')
     try:
         instance = ec2.create_instances(
@@ -22,6 +22,8 @@ def create_instance(user_data):
             MaxCount=1,
             MinCount=1,
             UserData=user_data,
+            IamInstanceProfile={'Name': iam_profil},
+            KeyName='ec-2test'
         )
         return instance[0].instance_id
     except:

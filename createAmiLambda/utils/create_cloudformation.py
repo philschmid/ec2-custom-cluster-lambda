@@ -1,5 +1,5 @@
 import boto3
-
+import json
 def create_cloudformation(image_id,cf_stack):
     template =  {
         "AWSTemplateFormatVersion": "2010-09-09",

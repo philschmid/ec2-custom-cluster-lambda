@@ -1,0 +1,8 @@
+sudo su ;
+yum install python3 -y && 
+pip3 install awscli --upgrade --user &&
+$(aws ecr get-login --region eu-central-1 --no-include-email) &&
+echo "nun einloggen"&& echo "logged in" && 
+docker pull 891511646143.dkr.ecr.eu-central-1.amazonaws.com/translator:latest &&
+pip3 uninstall awscli -y &&
+sudo yum remove python3 -y 

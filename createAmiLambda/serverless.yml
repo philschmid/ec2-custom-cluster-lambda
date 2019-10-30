@@ -16,6 +16,7 @@ provider:
       Fn::ImportValue: talos-sqs-url-snap-insight-translator-${opt:stage}
     stack_name: ${self:provider.tags.app}-${self:provider.tags.module}-${self:provider.tags.action}-${self:provider.tags.element}
     stage: ${opt:stage}
+    module: ${self:provider.tags.app}-${self:provider.tags.module}
 
   iamRoleStatements:
     - Effect: Allow

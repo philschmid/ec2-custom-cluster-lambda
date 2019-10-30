@@ -33,6 +33,9 @@ client = boto3.client('ecs', region_name='eu-central-1')
 # b. stop difference from actual running instances and evaluted_number
 # finish
 
+static_instance_type='c5.xlarge'
+# static_instance_type='t2.micro'
+
 def ec2_scaler(event,context):
     instance={}
     try:
@@ -40,7 +43,7 @@ def ec2_scaler(event,context):
         #! # get cf output values
         # #
         # instance['image_id'] = get_cf_outputs(f"insight-translator-create-ami-{os.environ['STAGE']}","AMI-ID")
-        instance['image_id'] = 'ami-0a93c6eb514c485e6'
+        instance['image_id'] = 'ami-06eeb4a18fc9f58c2'
 
         instance['security_group'] = get_cf_outputs('ec2-custom-cluster',f"security-group-name-{os.environ['SERVICENAME']}-{os.environ['STAGE']}")
         instance['instance_profile'] = get_cf_outputs('ec2-custom-cluster',f"instance-profile-name-{os.environ['SERVICENAME']}-{os.environ['STAGE']}")
@@ -49,7 +52,7 @@ def ec2_scaler(event,context):
         #! # create start script
         # #
 
-        user_data_start = create_user_data(instance['iam_role'])
+        user_data_start = create_user_data(instance['iam_role'],'1')
         print(user_data_start)
 
         # #
@@ -57,7 +60,7 @@ def ec2_scaler(event,context):
         # #
         try:
             # message_number = count_sqs(os.environ['sqs_queue_url'])
-            message_number = 0
+            message_number = 1
             # message_number = count_sqs(queue_url)
         except ValueError:
             return False
@@ -95,7 +98,7 @@ def ec2_scaler(event,context):
         ##
         if(instance_number > 0):
             # start_instance(user_data=user_data_start,image_id=instance['image_id'],security_group=os.environ['security_group'],count=instance_number,instance_type=os.environ['instance_type'],iam_profil=os.environ['iam_profil'])
-            started_instances_list=start_instance(user_data=user_data_start,image_id=instance['image_id'],security_group=instance['security_group'],count=instance_number,instance_type='t2.micro',iam_profil=instance['instance_profile'] )
+            started_instances_list=start_instance(user_data=user_data_start,image_id=instance['image_id'],security_group=instance['security_group'],count=instance_number,instance_type=static_instance_type,iam_profil=instance['instance_profile'] )
             print(started_instances_list)
             create_ec2_tags(started_instances_list,'translator')
         elif(instance_number < 0 ):
