@@ -23,7 +23,7 @@ from datetime import datetime
 # ''' 
 
 user_data = '''#!/bin/bash
-docker pull philschmi/translator
+docker pull philschmi/insight-translator-gpu
 ''' 
 
 def createAmi():
@@ -35,16 +35,17 @@ def createAmi():
     ## waiter for finishing user_data script
     wait_for_ec2(instance['instance_id'] )
     # stops instance 
-    stop_instance(instance['instance_id'])
-    ## create ami 
-    instance['image_id'] = create_image(instance_id=instance['instance_id'],name=f"{os.environ['module']}-{datetime.today().strftime('%Y%m%d')}")
-    ## termnaite ec2 instance 
-    terminate_instance(instance['instance_id'])
-    ## expose new ami_image_id
-    print(instance['image_id'] )
-    ## creates CF stack with Output
-    create_cloudformation(image_id=instance['image_id'],cf_stack=f"{os.environ['stack_name']}-{os.environ['STAGE']}")
-    return instance['image_id'] 
+    # stop_instance(instance['instance_id'])
+    # ## create ami 
+    # instance['image_id'] = create_image(instance_id=instance['instance_id'],name=f"{os.environ['module']}-{datetime.today().strftime('%Y%m%d')}")
+    # ## termnaite ec2 instance 
+    
+    # terminate_instance(instance['instance_id'])
+    # ## expose new ami_image_id
+    # print(instance['image_id'])
+    # ## creates CF stack with Output
+    # create_cloudformation(image_id=instance['image_id'],cf_stack=f"{os.environ['stack_name']}-{os.environ['STAGE']}")
+    # return instance['image_id'] 
 
    
 createAmi()

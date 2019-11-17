@@ -33,8 +33,8 @@ client = boto3.client('ecs', region_name='eu-central-1')
 # b. stop difference from actual running instances and evaluted_number
 # finish
 
-static_instance_type='c5.xlarge'
-# static_instance_type='t2.micro'
+#static_instance_type='c5.xlarge'
+static_instance_type='p3.2xlarge'
 
 def ec2_scaler(event,context):
     instance={}
@@ -42,9 +42,10 @@ def ec2_scaler(event,context):
         # #
         #! # get cf output values
         # #
-        # instance['image_id'] = get_cf_outputs(f"insight-translator-create-ami-{os.environ['STAGE']}","AMI-ID")
-        instance['image_id'] = 'ami-06eeb4a18fc9f58c2'
-
+        #instance['image_id'] = get_cf_outputs(f"insight-translator-create-ami-{os.environ['STAGE']}","AMI-ID")
+        instance['image_id'] = 'ami-0b90c82edaab557bb'
+        
+        sqs_queue_url=get_cf_outputs(f"talos-insight-translator-{os.environ['STAGE']}", f"talos-sqs-url-snap-insight-translator-{os.environ['STAGE']}")
         instance['security_group'] = get_cf_outputs('ec2-custom-cluster',f"security-group-name-{os.environ['SERVICENAME']}-{os.environ['STAGE']}")
         instance['instance_profile'] = get_cf_outputs('ec2-custom-cluster',f"instance-profile-name-{os.environ['SERVICENAME']}-{os.environ['STAGE']}")
         instance['iam_role'] = get_cf_outputs('ec2-custom-cluster',f"iam-role-name-{os.environ['SERVICENAME']}-{os.environ['STAGE']}")
@@ -59,8 +60,8 @@ def ec2_scaler(event,context):
         #! # count messages in QUEUE
         # #
         try:
-            # message_number = count_sqs(os.environ['sqs_queue_url'])
-            message_number = 1
+            message_number = count_sqs(sqs_queue_url)
+            #message_number = 1
             # message_number = count_sqs(queue_url)
         except ValueError:
             return False

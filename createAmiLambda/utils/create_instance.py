@@ -17,14 +17,18 @@ def create_instance(user_data,iam_profil):
                     },
                 },
             ],
-            ImageId='ami-084ab95c0cbe247e5',
+            #cpu
+            #ImageId='ami-084ab95c0cbe247e5',
+            #gpu 
+            ImageId='ami-01dcb736f2bffd5bc',
             InstanceType='t2.micro',
             MaxCount=1,
             MinCount=1,
             UserData=user_data,
             IamInstanceProfile={'Name': iam_profil},
-            KeyName='ec-2test'
+            KeyName='philipp-ec2-cluster'
         )
         return instance[0].instance_id
-    except:
-        raise ValueError('couldn´t start ec2 instance')
+    except Exception as e: 
+        print(e)    
+        raise(e)
